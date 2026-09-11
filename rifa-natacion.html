@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rifa · Copa de Natación</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=JetBrains+Mono:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --black:#071C24;
+    --deep:#0C333F;
+    --mid:#124957;
+    --aqua:#5FE0C9;
+    --aqua-dim:#3B9C8C;
+    --coral:#FF5A36;
+    --cream:#F4F1E6;
+    --cream-dim:#E4E0D2;
+    --ink:#071C24;
+    --text:#F2FAF8;
+    --muted:#7FA8AC;
+    --line:rgba(242,250,248,0.12);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+  body{
+    background:
+      radial-gradient(900px 500px at 85% -8%, rgba(95,224,201,0.10), transparent 60%),
+      radial-gradient(700px 400px at 5% 10%, rgba(255,90,54,0.06), transparent 55%),
+      var(--black);
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+  }
+  .mono{font-family:'JetBrains Mono', monospace;}
+
+  /* ---------- Hero ---------- */
+  .hero{
+    position:relative;
+    padding:56px 24px 0;
+    overflow:hidden;
+  }
+  .hero-inner{
+    max-width:1080px;
+    margin:0 auto;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:28px;
+    padding-bottom:44px;
+  }
+  .eyebrow{
+    font-size:13px;
+    color:var(--aqua);
+    margin:0 0 14px;
+    font-weight:500;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-optical-sizing:auto;
+    font-weight:500;
+    font-size:clamp(36px, 6vw, 64px);
+    line-height:0.98;
+    margin:0 0 16px;
+    max-width:14ch;
+    letter-spacing:-0.01em;
+  }
+  .hero-copy p{
+    margin:0;
+    color:var(--muted);
+    font-size:16px;
+    max-width:44ch;
+    line-height:1.6;
+  }
+  .prize-card{
+    background:var(--cream);
+    color:var(--ink);
+    border-radius:14px;
+    padding:22px 26px;
+    min-width:220px;
+    box-shadow:0 20px 40px -20px rgba(0,0,0,0.5);
+  }
+  .prize-card .label{
+    font-size:12px;
+    color:#4A5D5F;
+    margin-bottom:6px;
+  }
+  .prize-card .amount{
+    font-family:'JetBrains Mono', monospace;
+    font-weight:700;
+    font-size:32px;
+    line-height:1;
+  }
+  .prize-card .amount span{color:var(--coral);}
+  .prize-card .sub{
+    margin-top:10px;
+    font-size:12.5px;
+    color:#5B6E70;
+  }
+
+  .wave{
+    display:block;
+    width:100%;
+    height:46px;
+    margin-top:-2px;
+  }
+
+  /* ---------- Layout ---------- */
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px 70px;}
+  .layout{
+    display:grid;
+    grid-template-columns:1fr 300px;
+    gap:24px;
+    align-items:flex-start;
+    margin-top:38px;
+  }
+  @media (max-width:840px){
+    .layout{grid-template-columns:1fr;}
+  }
+
+  .board{
+    background:var(--deep);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:26px;
+  }
+  .board-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+  .board-head h2{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:20px;
+    margin:0;
+  }
+  input[type="text"], input[type="tel"]{
+    background:var(--mid);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:10px 14px;
+    border-radius:8px;
+    font-family:'Inter', sans-serif;
+    font-size:13.5px;
+  }
+  input::placeholder{color:var(--muted);}
+  input:focus{outline:2px solid var(--aqua); outline-offset:1px;}
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(10, 1fr);
+    gap:7px;
+  }
+  @media (max-width:560px){
+    .grid{grid-template-columns:repeat(5, 1fr);}
+  }
+  .tile{
+    aspect-ratio:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'JetBrains Mono', monospace;
+    font-weight:700;
+    font-size:14px;
+    border-radius:9px;
+    cursor:pointer;
+    border:none;
+    background:var(--cream);
+    color:var(--ink);
+    transition:transform 0.15s ease, box-shadow 0.15s ease;
+    position:relative;
+  }
+  .tile:hover{transform:translateY(-3px); box-shadow:0 10px 18px -10px rgba(0,0,0,0.5);}
+  .tile:focus-visible{outline:2px solid var(--coral); outline-offset:2px;}
+  .tile.sold{background:var(--mid); color:var(--aqua);}
+  .tile.paid{background:var(--aqua); color:var(--ink);}
+  .tile.paid::after{
+    content:"";
+    position:absolute;
+    top:5px; right:5px;
+    width:6px; height:6px;
+    border-radius:50%;
+    background:var(--coral);
+  }
+  .tile.dim{opacity:0.28;}
+
+  .legend{
+    display:flex;
+    gap:18px;
+    margin-top:18px;
+    flex-wrap:wrap;
+    font-size:12.5px;
+    color:var(--muted);
+  }
+  .legend span{display:inline-flex; align-items:center; gap:7px;}
+  .dot{width:10px;height:10px;border-radius:3px;display:inline-block;}
+  .dot.free{background:var(--cream);}
+  .dot.sold{background:var(--mid); border:1px solid var(--line);}
+  .dot.paid{background:var(--aqua);}
+
+  /* ---------- Panel ---------- */
+  .panel{
+    background:var(--deep);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:24px;
+    position:sticky;
+    top:20px;
+  }
+  .panel h2{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:20px;
+    margin:0 0 18px;
+  }
+  .stat{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:12px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .stat:last-of-type{border-bottom:none;}
+  .stat .label{font-size:13px; color:var(--muted);}
+  .stat .value{font-family:'JetBrains Mono', monospace; font-size:17px; font-weight:700;}
+  .stat .value.coral{color:var(--coral);}
+  .stat .value.aqua{color:var(--aqua);}
+
+  .progress-track{
+    height:8px;
+    background:var(--mid);
+    border-radius:6px;
+    overflow:hidden;
+    margin:16px 0 6px;
+  }
+  .progress-fill{
+    height:100%;
+    background:linear-gradient(90deg, var(--aqua), var(--coral));
+    width:0%;
+    transition:width 0.4s ease;
+  }
+  .progress-note{font-size:12.5px; color:var(--muted);}
+
+  .export-btn{
+    margin-top:18px;
+    width:100%;
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:12px;
+    border-radius:9px;
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:'Inter', sans-serif;
+  }
+  .export-btn:hover{border-color:var(--aqua); color:var(--aqua);}
+
+  /* ---------- Modal ---------- */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(4,17,21,0.72);
+    backdrop-filter:blur(2px);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:10;
+  }
+  .overlay.open{display:flex;}
+  .modal{
+    background:var(--cream);
+    color:var(--ink);
+    border-radius:18px;
+    padding:30px;
+    width:100%;
+    max-width:380px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.6);
+  }
+  .modal h3{
+    font-family:'JetBrains Mono', monospace;
+    font-weight:700;
+    font-size:34px;
+    margin:0 0 4px;
+    color:var(--coral);
+  }
+  .modal .sub{color:#5B6E70; font-size:13.5px; margin:0 0 22px;}
+  label{display:block; font-size:12.5px; color:#5B6E70; margin-bottom:6px; margin-top:16px;}
+  label:first-of-type{margin-top:0;}
+  .modal input[type="text"], .modal input[type="tel"]{
+    width:100%;
+    background:#fff;
+    border:1px solid #D8D2C1;
+    color:var(--ink);
+  }
+  .modal input:focus{outline:2px solid var(--coral);}
+  .check-row{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    margin-top:18px;
+  }
+  .check-row input{width:17px; height:17px; accent-color:var(--coral);}
+  .check-row label{margin:0; font-size:13.5px; color:var(--ink);}
+
+  .modal-actions{
+    display:flex;
+    gap:10px;
+    margin-top:24px;
+  }
+  .btn{
+    flex:1;
+    padding:12px;
+    border-radius:9px;
+    border:none;
+    font-weight:600;
+    font-size:13.5px;
+    cursor:pointer;
+    font-family:'Inter', sans-serif;
+  }
+  .btn.primary{background:var(--ink); color:var(--cream);}
+  .btn.ghost{background:transparent; border:1px solid #D8D2C1; color:var(--ink);}
+  .btn.danger{background:transparent; border:1px solid rgba(255,90,54,0.5); color:var(--coral);}
+  .btn:hover{filter:brightness(1.08);}
+</style>
+</head>
+<body>
+
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <p class="eyebrow">Sorteo de diciembre</p>
+        <h1>Rifa Copa de Natación</h1>
+        <p>100 boletas de $20.000 para llegar al torneo. Toca un número libre en el tablero para registrar al comprador.</p>
+      </div>
+      <div class="prize-card">
+        <div class="label">Premio para el número ganador</div>
+        <div class="amount"><span>$</span>400.000</div>
+        <div class="sub">Boleta: $20.000 · 100 disponibles</div>
+      </div>
+    </div>
+    <svg class="wave" viewBox="0 0 1080 46" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0 24 C 90 4, 180 44, 270 24 S 450 4, 540 24 S 720 44, 810 24 S 990 4, 1080 24 V46 H0 Z" fill="#0C333F"/>
+      <path d="M0 30 C 90 12, 180 48, 270 30 S 450 12, 540 30 S 720 48, 810 30 S 990 12, 1080 30" fill="none" stroke="#5FE0C9" stroke-opacity="0.35" stroke-width="1.5"/>
+    </svg>
+  </section>
+
+  <div class="wrap">
+    <div class="layout">
+      <div class="board">
+        <div class="board-head">
+          <h2>Tablero de boletas</h2>
+          <input type="text" id="searchBox" placeholder="Buscar por nombre…">
+        </div>
+        <div class="grid" id="grid"></div>
+        <div class="legend">
+          <span><span class="dot free"></span>Disponible</span>
+          <span><span class="dot sold"></span>Vendida — pendiente</span>
+          <span><span class="dot paid"></span>Vendida — pagada</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Resumen</h2>
+        <div class="stat"><span class="label">Boletas vendidas</span><span class="value" id="statSold">0 / 100</span></div>
+        <div class="stat"><span class="label">Pagadas</span><span class="value aqua" id="statPaid">0</span></div>
+        <div class="stat"><span class="label">Recaudado</span><span class="value coral" id="statCollected">$0</span></div>
+        <div class="stat"><span class="label">Meta total</span><span class="value" id="statGoal">$2.000.000</span></div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <p class="progress-note" id="progressNote">0% de la meta</p>
+        <button class="export-btn" id="exportBtn">Copiar lista de compradores</button>
+      </div>
+    </div>
+  </div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3 id="modalNumber">#1</h3>
+    <p class="sub" id="modalSub">Registrar comprador</p>
+
+    <label for="buyerName">Nombre completo</label>
+    <input type="text" id="buyerName" placeholder="Ej: Camila Rojas">
+
+    <label for="buyerContact">Teléfono o contacto</label>
+    <input type="tel" id="buyerContact" placeholder="Ej: 300 123 4567">
+
+    <div class="check-row">
+      <input type="checkbox" id="buyerPaid">
+      <label for="buyerPaid">Ya pagó los $20.000</label>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn ghost" id="cancelBtn">Cancelar</button>
+      <button class="btn primary" id="saveBtn">Guardar</button>
+    </div>
+    <div class="modal-actions" id="releaseRow" style="display:none;">
+      <button class="btn danger" id="releaseBtn">Liberar boleta</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TOTAL_TICKETS = 100;
+const PRICE = 20000;
+const GOAL = TOTAL_TICKETS * PRICE;
+const STORAGE_KEY = 'rifa-natacion-tickets';
+
+let tickets = {};
+let currentNumber = null;
+
+const grid = document.getElementById('grid');
+const overlay = document.getElementById('overlay');
+const modalNumber = document.getElementById('modalNumber');
+const modalSub = document.getElementById('modalSub');
+const buyerName = document.getElementById('buyerName');
+const buyerContact = document.getElementById('buyerContact');
+const buyerPaid = document.getElementById('buyerPaid');
+const releaseRow = document.getElementById('releaseRow');
+const searchBox = document.getElementById('searchBox');
+
+function money(n){
+  return '$' + n.toLocaleString('es-CO');
+}
+
+async function loadTickets(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    tickets = res && res.value ? JSON.parse(res.value) : {};
+  }catch(e){
+    tickets = {};
+  }
+  renderGrid();
+  renderStats();
+}
+
+async function saveTickets(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(tickets), false);
+  }catch(e){
+    console.error('No se pudo guardar', e);
+  }
+}
+
+function renderGrid(filter){
+  grid.innerHTML = '';
+  const q = (filter || '').trim().toLowerCase();
+  for(let i = 1; i <= TOTAL_TICKETS; i++){
+    const t = tickets[i];
+    const tile = document.createElement('button');
+    tile.className = 'tile';
+    tile.textContent = i;
+    if(t){
+      tile.className += t.paid ? ' paid' : ' sold';
+      tile.title = t.name + (t.contact ? ' · ' + t.contact : '');
+    }
+    if(q && (!t || !t.name.toLowerCase().includes(q))){
+      tile.className += ' dim';
+    }
+    tile.addEventListener('click', () => openModal(i));
+    grid.appendChild(tile);
+  }
+}
+
+function renderStats(){
+  const sold = Object.keys(tickets).length;
+  const paid = Object.values(tickets).filter(t => t.paid).length;
+  const collected = paid * PRICE;
+
+  document.getElementById('statSold').textContent = sold + ' / ' + TOTAL_TICKETS;
+  document.getElementById('statPaid').textContent = paid;
+  document.getElementById('statCollected').textContent = money(collected);
+  document.getElementById('statGoal').textContent = money(GOAL);
+
+  const pct = Math.min(100, Math.round((collected / GOAL) * 100));
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressNote').textContent = pct + '% de la meta recaudada';
+}
+
+function openModal(number){
+  currentNumber = number;
+  const t = tickets[number];
+  modalNumber.textContent = '#' + number;
+  if(t){
+    modalSub.textContent = 'Editar comprador de esta boleta';
+    buyerName.value = t.name || '';
+    buyerContact.value = t.contact || '';
+    buyerPaid.checked = !!t.paid;
+    releaseRow.style.display = 'flex';
+  } else {
+    modalSub.textContent = 'Registrar comprador';
+    buyerName.value = '';
+    buyerContact.value = '';
+    buyerPaid.checked = false;
+    releaseRow.style.display = 'none';
+  }
+  overlay.classList.add('open');
+  buyerName.focus();
+}
+
+function closeModal(){
+  overlay.classList.remove('open');
+  currentNumber = null;
+}
+
+document.getElementById('cancelBtn').addEventListener('click', closeModal);
+overlay.addEventListener('click', (e) => { if(e.target === overlay) closeModal(); });
+
+document.getElementById('saveBtn').addEventListener('click', async () => {
+  const name = buyerName.value.trim();
+  if(!name){
+    buyerName.focus();
+    return;
+  }
+  tickets[currentNumber] = {
+    name,
+    contact: buyerContact.value.trim(),
+    paid: buyerPaid.checked
+  };
+  await saveTickets();
+  renderGrid(searchBox.value);
+  renderStats();
+  closeModal();
+});
+
+document.getElementById('releaseBtn').addEventListener('click', async () => {
+  delete tickets[currentNumber];
+  await saveTickets();
+  renderGrid(searchBox.value);
+  renderStats();
+  closeModal();
+});
+
+searchBox.addEventListener('input', () => renderGrid(searchBox.value));
+
+document.getElementById('exportBtn').addEventListener('click', async () => {
+  const lines = Object.entries(tickets)
+    .sort((a,b) => Number(a[0]) - Number(b[0]))
+    .map(([num, t]) => `#${num} — ${t.name}${t.contact ? ' — ' + t.contact : ''} — ${t.paid ? 'Pagado' : 'Pendiente'}`);
+  const text = lines.length ? lines.join('\n') : 'Aún no hay boletas registradas.';
+  try{
+    await navigator.clipboard.writeText(text);
+    const btn = document.getElementById('exportBtn');
+    const original = btn.textContent;
+    btn.textContent = 'Copiado ✓';
+    setTimeout(() => btn.textContent = original, 1500);
+  }catch(e){
+    alert(text);
+  }
+});
+
+loadTickets();
+</script>
+</body>
+</html>
