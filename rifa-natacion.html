@@ -6,6 +6,8 @@
 <title>Rifa · Copa de Natación</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=JetBrains+Mono:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Supabase JS Client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --black:#071C24;
@@ -20,6 +22,7 @@
     --text:#F2FAF8;
     --muted:#7FA8AC;
     --line:rgba(242,250,248,0.12);
+    --gold:#FFD700;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -34,13 +37,72 @@
     color:var(--text);
     font-family:'Inter', sans-serif;
     min-height:100vh;
+    padding-bottom: 70px;
   }
   .mono{font-family:'JetBrains Mono', monospace;}
+
+  /* Header Top Bar / Admin Switch */
+  .top-bar {
+    background: rgba(7, 28, 36, 0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .brand-title {
+    font-family: 'Fraunces', serif;
+    font-size: 16px;
+    color: var(--aqua);
+    font-weight: 500;
+  }
+  .admin-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: var(--deep);
+    color: var(--text);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .btn-sm:hover { background: var(--mid); border-color: var(--aqua); }
+
+  /* ---------- Winner Banner ---------- */
+  .winner-banner {
+    background: linear-gradient(135deg, #FF5A36, #FFD700);
+    color: var(--black);
+    padding: 18px 24px;
+    text-align: center;
+    font-weight: 700;
+    display: none;
+    box-shadow: 0 10px 30px rgba(255, 90, 54, 0.4);
+    animation: pulseBanner 2s infinite;
+  }
+  .winner-banner.active { display: block; }
+  @keyframes pulseBanner {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.92; }
+  }
 
   /* ---------- Hero ---------- */
   .hero{
     position:relative;
-    padding:56px 24px 0;
+    padding:44px 24px 0;
     overflow:hidden;
   }
   .hero-inner{
@@ -51,13 +113,15 @@
     align-items:flex-end;
     justify-content:space-between;
     gap:28px;
-    padding-bottom:44px;
+    padding-bottom:36px;
   }
   .eyebrow{
     font-size:13px;
     color:var(--aqua);
     margin:0 0 14px;
     font-weight:500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
   }
   h1{
     font-family:'Fraunces', serif;
@@ -81,13 +145,15 @@
     color:var(--ink);
     border-radius:14px;
     padding:22px 26px;
-    min-width:220px;
+    min-width:240px;
     box-shadow:0 20px 40px -20px rgba(0,0,0,0.5);
+    border: 2px solid var(--aqua);
   }
   .prize-card .label{
     font-size:12px;
     color:#4A5D5F;
     margin-bottom:6px;
+    font-weight: 600;
   }
   .prize-card .amount{
     font-family:'JetBrains Mono', monospace;
@@ -113,10 +179,10 @@
   .wrap{max-width:1080px; margin:0 auto; padding:0 24px 70px;}
   .layout{
     display:grid;
-    grid-template-columns:1fr 300px;
+    grid-template-columns:1fr 320px;
     gap:24px;
     align-items:flex-start;
-    margin-top:38px;
+    margin-top:32px;
   }
   @media (max-width:840px){
     .layout{grid-template-columns:1fr;}
@@ -139,10 +205,10 @@
   .board-head h2{
     font-family:'Fraunces', serif;
     font-weight:500;
-    font-size:20px;
+    font-size:22px;
     margin:0;
   }
-  input[type="text"], input[type="tel"]{
+  input[type="text"], input[type="tel"], input[type="email"], input[type="password"], select{
     background:var(--mid);
     border:1px solid var(--line);
     color:var(--text);
@@ -152,7 +218,7 @@
     font-size:13.5px;
   }
   input::placeholder{color:var(--muted);}
-  input:focus{outline:2px solid var(--aqua); outline-offset:1px;}
+  input:focus, select:focus{outline:2px solid var(--aqua); outline-offset:1px;}
 
   .grid{
     display:grid;
@@ -175,12 +241,20 @@
     border:none;
     background:var(--cream);
     color:var(--ink);
-    transition:transform 0.15s ease, box-shadow 0.15s ease;
+    transition:transform 0.15s ease, box-shadow 0.15s ease, background 0.2s;
     position:relative;
   }
   .tile:hover{transform:translateY(-3px); box-shadow:0 10px 18px -10px rgba(0,0,0,0.5);}
   .tile:focus-visible{outline:2px solid var(--coral); outline-offset:2px;}
-  .tile.sold{background:var(--mid); color:var(--aqua);}
+  .tile.selected {
+    background: var(--coral) !important;
+    color: #fff !important;
+    border: 2px solid var(--gold) !important;
+    transform: scale(1.06);
+    box-shadow: 0 0 15px var(--coral);
+    z-index: 5;
+  }
+  .tile.sold{background:var(--mid); color:var(--aqua); border: 1px solid var(--aqua-dim);}
   .tile.paid{background:var(--aqua); color:var(--ink);}
   .tile.paid::after{
     content:"";
@@ -190,7 +264,18 @@
     border-radius:50%;
     background:var(--coral);
   }
-  .tile.dim{opacity:0.28;}
+  .tile.winner {
+    background: linear-gradient(135deg, #FFD700, #FF5A36) !important;
+    color: #000 !important;
+    animation: bounce 1s infinite alternate;
+    box-shadow: 0 0 15px #FFD700;
+    z-index: 2;
+  }
+  @keyframes bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-6px); }
+  }
+  .tile.dim{opacity:0.25;}
 
   .legend{
     display:flex;
@@ -203,8 +288,10 @@
   .legend span{display:inline-flex; align-items:center; gap:7px;}
   .dot{width:10px;height:10px;border-radius:3px;display:inline-block;}
   .dot.free{background:var(--cream);}
+  .dot.selected{background:var(--coral);}
   .dot.sold{background:var(--mid); border:1px solid var(--line);}
   .dot.paid{background:var(--aqua);}
+  .dot.winner{background:var(--gold);}
 
   /* ---------- Panel ---------- */
   .panel{
@@ -213,7 +300,7 @@
     border-radius:16px;
     padding:24px;
     position:sticky;
-    top:20px;
+    top:60px;
   }
   .panel h2{
     font-family:'Fraunces', serif;
@@ -249,72 +336,164 @@
   }
   .progress-note{font-size:12.5px; color:var(--muted);}
 
+  .admin-box {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--line);
+    display: none;
+  }
+  .admin-box.active { display: block; }
+  .admin-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--aqua);
+    margin-bottom: 12px;
+    font-weight: 600;
+  }
+
   .export-btn{
-    margin-top:18px;
+    margin-top:12px;
     width:100%;
     background:transparent;
     border:1px solid var(--line);
     color:var(--text);
-    padding:12px;
+    padding:10px;
     border-radius:9px;
-    font-size:13.5px;
+    font-size:13px;
     font-weight:600;
     cursor:pointer;
     font-family:'Inter', sans-serif;
+    transition: all 0.2s;
   }
   .export-btn:hover{border-color:var(--aqua); color:var(--aqua);}
 
-  /* ---------- Modal ---------- */
+  /* Floating Multi-Select Cart Bar */
+  .floating-cart-bar {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #0C333F, #124957);
+    border: 2px solid var(--aqua);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.7);
+    border-radius: 40px;
+    padding: 12px 22px;
+    display: none;
+    align-items: center;
+    gap: 16px;
+    z-index: 150;
+    animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .floating-cart-bar.active { display: flex; }
+  @keyframes slideUp {
+    from { transform: translate(-50%, 50px); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
+  }
+
+  /* ---------- Modals ---------- */
   .overlay{
     position:fixed; inset:0;
-    background:rgba(4,17,21,0.72);
-    backdrop-filter:blur(2px);
+    background:rgba(4,17,21,0.85);
+    backdrop-filter:blur(5px);
     display:none;
     align-items:center;
     justify-content:center;
     padding:20px;
-    z-index:10;
+    z-index:200;
   }
   .overlay.open{display:flex;}
   .modal{
     background:var(--cream);
     color:var(--ink);
     border-radius:18px;
-    padding:30px;
+    padding:28px;
     width:100%;
-    max-width:380px;
+    max-width:450px;
     box-shadow:0 30px 60px -20px rgba(0,0,0,0.6);
+    max-height: 90vh;
+    overflow-y: auto;
   }
   .modal h3{
     font-family:'JetBrains Mono', monospace;
     font-weight:700;
-    font-size:34px;
+    font-size:28px;
     margin:0 0 4px;
     color:var(--coral);
   }
-  .modal .sub{color:#5B6E70; font-size:13.5px; margin:0 0 22px;}
-  label{display:block; font-size:12.5px; color:#5B6E70; margin-bottom:6px; margin-top:16px;}
+  .modal .sub{color:#5B6E70; font-size:13.5px; margin:0 0 18px;}
+  
+  label{display:block; font-size:12.5px; color:#4A5D5F; margin-bottom:6px; margin-top:14px; font-weight:600;}
   label:first-of-type{margin-top:0;}
-  .modal input[type="text"], .modal input[type="tel"]{
+  .modal input[type="text"], .modal input[type="tel"], .modal input[type="email"], .modal input[type="password"], .modal select{
     width:100%;
     background:#fff;
     border:1px solid #D8D2C1;
     color:var(--ink);
   }
-  .modal input:focus{outline:2px solid var(--coral);}
+  .modal input:focus, .modal select:focus{outline:2px solid var(--coral);}
+
+  /* Bre-B Nu Card */
+  .payment-card {
+    background: #0C333F;
+    color: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 14px;
+    border: 1px solid var(--aqua-dim);
+  }
+  .payment-card .pay-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .payment-card .pay-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--aqua);
+  }
+  .payment-key-box {
+    background: #071C24;
+    border: 1px dashed var(--aqua);
+    padding: 12px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 8px 0;
+  }
+  .key-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: #FF5A36;
+  }
+  .copy-key-btn {
+    background: var(--aqua);
+    color: #071C24;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .copy-key-btn:hover { background: #fff; }
+
   .check-row{
     display:flex;
     align-items:center;
     gap:9px;
-    margin-top:18px;
+    margin-top:16px;
   }
   .check-row input{width:17px; height:17px; accent-color:var(--coral);}
-  .check-row label{margin:0; font-size:13.5px; color:var(--ink);}
+  .check-row label{margin:0; font-size:13.5px; color:var(--ink); font-weight:500;}
 
   .modal-actions{
     display:flex;
     gap:10px;
-    margin-top:24px;
+    margin-top:22px;
   }
   .btn{
     flex:1;
@@ -325,24 +504,53 @@
     font-size:13.5px;
     cursor:pointer;
     font-family:'Inter', sans-serif;
+    transition: filter 0.15s;
   }
   .btn.primary{background:var(--ink); color:var(--cream);}
   .btn.ghost{background:transparent; border:1px solid #D8D2C1; color:var(--ink);}
   .btn.danger{background:transparent; border:1px solid rgba(255,90,54,0.5); color:var(--coral);}
-  .btn:hover{filter:brightness(1.08);}
+  .btn.gold{background:linear-gradient(135deg, #FFD700, #FF8C00); color:#000; font-weight:700;}
+  .btn:hover{filter:brightness(1.1);}
+
+  .sql-code-box {
+    background: #071C24;
+    color: #5FE0C9;
+    padding: 12px;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    white-space: pre-wrap;
+    max-height: 180px;
+    overflow-y: auto;
+    border: 1px solid var(--line);
+    margin-top: 10px;
+  }
 </style>
 </head>
 <body>
 
+  <!-- Top Bar / Admin Switch -->
+  <header class="top-bar">
+    <div class="brand-title">🏊‍♂️ Rifa Copa de Natación</div>
+    <div class="admin-controls">
+      <button class="btn-sm" id="toggleAdminBtn">🔓 Modo Admin</button>
+    </div>
+  </header>
+
+  <!-- Winner Announcement Banner -->
+  <div class="winner-banner" id="winnerBanner">
+    🎉 ¡SORTEO FINALIZADO! El número ganador es el <span id="bannerWinnerNum">#--</span> · Ganador: <span id="bannerWinnerName">---</span> 🎉
+  </div>
+
   <section class="hero">
     <div class="hero-inner">
       <div class="hero-copy">
-        <p class="eyebrow">Sorteo de diciembre</p>
+        <p class="eyebrow">🏊 Sorteo de Diciembre</p>
         <h1>Rifa Copa de Natación</h1>
-        <p>100 boletas de $20.000 para llegar al torneo. Toca un número libre en el tablero para registrar al comprador.</p>
+        <p>100 boletas de $20.000 para llegar al torneo. Puedes seleccionar varias boletas a la vez para tu compra.</p>
       </div>
       <div class="prize-card">
-        <div class="label">Premio para el número ganador</div>
+        <div class="label">🏆 Premio al Número Ganador</div>
         <div class="amount"><span>$</span>400.000</div>
         <div class="sub">Boleta: $20.000 · 100 disponibles</div>
       </div>
@@ -358,13 +566,15 @@
       <div class="board">
         <div class="board-head">
           <h2>Tablero de boletas</h2>
-          <input type="text" id="searchBox" placeholder="Buscar por nombre…">
+          <input type="text" id="searchBox" placeholder="Buscar comprador o #...">
         </div>
         <div class="grid" id="grid"></div>
         <div class="legend">
           <span><span class="dot free"></span>Disponible</span>
-          <span><span class="dot sold"></span>Vendida — pendiente</span>
-          <span><span class="dot paid"></span>Vendida — pagada</span>
+          <span><span class="dot selected"></span>Seleccionada</span>
+          <span><span class="dot sold"></span>Reservada (Pendiente)</span>
+          <span><span class="dot paid"></span>Pagada</span>
+          <span><span class="dot winner"></span>Ganador</span>
         </div>
       </div>
 
@@ -376,76 +586,429 @@
         <div class="stat"><span class="label">Meta total</span><span class="value" id="statGoal">$2.000.000</span></div>
         <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
         <p class="progress-note" id="progressNote">0% de la meta</p>
-        <button class="export-btn" id="exportBtn">Copiar lista de compradores</button>
+        
+        <button class="export-btn" id="exportBtn">📋 Copiar lista de compradores</button>
+
+        <!-- Admin Controls Panel -->
+        <div class="admin-box" id="adminBox">
+          <div class="admin-title">👑 Opciones de Organizador</div>
+          <button class="export-btn" style="border-color:var(--gold); color:var(--gold);" id="drawWinnerBtn">🏆 Realizar Sorteo / Ganador</button>
+          <button class="export-btn" style="border-color:var(--aqua); color:var(--aqua);" id="whatsappBroadcastBtn">📢 WhatsApp / Notificaciones</button>
+          <button class="export-btn" style="border-color:rgba(95,224,201,0.5);" id="viewSqlModalBtn">📜 Script SQL Supabase</button>
+          <button class="export-btn" style="border-color:rgba(242,250,248,0.3);" id="changePassBtn">🔑 Cambiar Clave Admin</button>
+        </div>
       </div>
     </div>
   </div>
 
-<div class="overlay" id="overlay">
-  <div class="modal">
-    <h3 id="modalNumber">#1</h3>
-    <p class="sub" id="modalSub">Registrar comprador</p>
-
-    <label for="buyerName">Nombre completo</label>
-    <input type="text" id="buyerName" placeholder="Ej: Camila Rojas">
-
-    <label for="buyerContact">Teléfono o contacto</label>
-    <input type="tel" id="buyerContact" placeholder="Ej: 300 123 4567">
-
-    <div class="check-row">
-      <input type="checkbox" id="buyerPaid">
-      <label for="buyerPaid">Ya pagó los $20.000</label>
+  <!-- Floating Multi-Ticket Bar -->
+  <div class="floating-cart-bar" id="floatingCartBar">
+    <div style="font-size:13.5px; font-weight:600; color:#fff;">
+      🛒 Seleccionadas: <span id="cartCount" style="color:var(--aqua); font-weight:700;">0</span> · Total: <span id="cartTotal" style="color:var(--gold); font-weight:700;">$0</span>
     </div>
+    <button class="btn primary" id="openCartModalBtn" style="padding:8px 16px; font-size:13px; border-radius:20px; background:var(--coral); font-weight:700;">Reservar Seleccionadas ➔</button>
+  </div>
 
-    <div class="modal-actions">
-      <button class="btn ghost" id="cancelBtn">Cancelar</button>
-      <button class="btn primary" id="saveBtn">Guardar</button>
-    </div>
-    <div class="modal-actions" id="releaseRow" style="display:none;">
-      <button class="btn danger" id="releaseBtn">Liberar boleta</button>
+  <!-- Modal Booking / Payment -->
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <h3 id="modalNumber">#1</h3>
+      <p class="sub" id="modalSub">Reservar boletas</p>
+
+      <label for="buyerName">Nombre completo *</label>
+      <input type="text" id="buyerName" placeholder="Ej: Camila Rojas">
+
+      <label for="buyerContact">Celular / WhatsApp *</label>
+      <input type="tel" id="buyerContact" placeholder="Ej: 300 123 4567">
+
+      <label for="buyerEmail">Correo electrónico (Opcional)</label>
+      <input type="email" id="buyerEmail" placeholder="Ej: camila@gmail.com">
+
+      <label for="payMethod">Método de pago</label>
+      <select id="payMethod">
+        <option value="bre_b_nu">Llave Bre-B (Nu) — 3024175420</option>
+        <option value="efectivo">Efectivo (Pago presencial)</option>
+      </select>
+
+      <!-- Bre-B Nu info card -->
+      <div class="payment-card" id="nuPayCard">
+        <div class="pay-header">
+          <span class="pay-title">🟣 Transferencia Bre-B (Nu)</span>
+        </div>
+        <p style="font-size:12px; margin:0 0 6px; color:#A0C0C5;" id="nuTransferAmountText">Transfiere $20.000 usando la siguiente llave:</p>
+        <div class="payment-key-box">
+          <span class="key-number">3024175420</span>
+          <button class="copy-key-btn" id="copyKeyBtn">📋 Copiar Llave</button>
+        </div>
+        <p style="font-size:11.5px; margin:6px 0 0; color:var(--muted);">Puedes pagar desde Nu, Nequi, Daviplata o cualquier banco por Bre-B.</p>
+      </div>
+
+      <label for="buyerReceipt" style="margin-top:14px;">Código de Comprobante / Referencia (Generado Automáticamente)</label>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="buyerReceipt" readonly style="background:#ECE7D8; font-family:'JetBrains Mono', monospace; font-weight:700; color:var(--coral); font-size:14px; letter-spacing:0.5px; cursor:default;">
+        <button type="button" class="btn ghost" id="copyReceiptBtn" style="flex:0 0 auto; padding:8px 12px; font-size:12px;">📋 Copiar</button>
+      </div>
+
+      <div class="check-row" id="paidRow">
+        <input type="checkbox" id="buyerPaid">
+        <label for="buyerPaid">Marcar pago como CONFIRMADO ($20.000 c/u)</label>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn ghost" id="cancelBtn">Cancelar</button>
+        <button class="btn primary" id="saveBtn">Guardar Reserva</button>
+      </div>
+      <div class="modal-actions" id="releaseRow" style="display:none;">
+        <button class="btn danger" id="releaseBtn">Liberar boleta</button>
+      </div>
     </div>
   </div>
-</div>
+
+  <!-- Modal Admin Auth (Contraseña) -->
+  <div class="overlay" id="adminAuthOverlay">
+    <div class="modal">
+      <h3>🔐 Modo Organizador</h3>
+      <p class="sub">Ingresa la contraseña de administrador para gestionar los pagos y el sorteo.</p>
+
+      <label for="adminPassInput">Contraseña de Admin</label>
+      <input type="password" id="adminPassInput" placeholder="Ingresa la clave...">
+      <p id="adminAuthError" style="color:var(--coral); font-size:12.5px; margin:6px 0 0; display:none; font-weight:600;">⚠️ Contraseña incorrecta. Inténtalo de nuevo.</p>
+      <div class="modal-actions">
+        <button class="btn ghost" id="cancelAuthBtn">Cancelar</button>
+        <button class="btn primary" id="submitAuthBtn">Ingresar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Cambiar Contraseña Admin -->
+  <div class="overlay" id="changePassOverlay">
+    <div class="modal">
+      <h3>🔑 Cambiar Clave Admin</h3>
+      <p class="sub">Ingresa tu nueva contraseña para proteger el Modo Organizador.</p>
+
+      <label for="newPassInput">Nueva Contraseña</label>
+      <input type="password" id="newPassInput" placeholder="Escribe tu nueva clave...">
+
+      <div class="modal-actions">
+        <button class="btn ghost" id="cancelChangePassBtn">Cancelar</button>
+        <button class="btn primary" id="saveNewPassBtn">Guardar Clave</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Script SQL Supabase (Admin) -->
+  <div class="overlay" id="sqlModalOverlay">
+    <div class="modal">
+      <h3>📜 Script SQL para Supabase</h3>
+      <p class="sub">Copia este código y ejecútalo en el <b>SQL Editor</b> de tu proyecto Supabase para activar la base de datos:</p>
+
+      <div class="sql-code-box" id="sqlBox">-- 1. Tabla de boletas
+CREATE TABLE IF NOT EXISTS public.boletas (
+  numero INT PRIMARY KEY,
+  nombre TEXT NOT NULL,
+  telefono TEXT NOT NULL,
+  email TEXT,
+  metodo_pago TEXT NOT NULL DEFAULT 'bre_b_nu',
+  comprobante TEXT,
+  estado TEXT NOT NULL DEFAULT 'pendiente',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. Tabla de ganador
+CREATE TABLE IF NOT EXISTS public.sorteo (
+  id INT PRIMARY KEY DEFAULT 1,
+  numero_ganador INT,
+  ganador_nombre TEXT,
+  fecha_sorteo TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. Habilitar Realtime
+ALTER PUBLICATION supabase_realtime ADD TABLE public.boletas, public.sorteo;
+
+-- 4. DESACTIVAR RLS EN AMBAS TABLAS PARA PERMITIR GUARDAR
+ALTER TABLE public.boletas DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.sorteo DISABLE ROW LEVEL SECURITY;</div>
+
+      <div class="modal-actions">
+        <button class="btn ghost" id="closeSqlModalBtn">Cerrar</button>
+        <button class="btn primary" id="copySqlBtn">📋 Copiar Script SQL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Winner Selection -->
+  <div class="overlay" id="winnerOverlay">
+    <div class="modal">
+      <h3>🏆 Realizar Sorteo</h3>
+      <p class="sub">Selecciona o realiza el sorteo digital para determinar la boleta ganadora.</p>
+
+      <label for="manualWinnerNum">Número Ganador (1 al 100)</label>
+      <input type="text" id="manualWinnerNum" placeholder="Ej: 47">
+
+      <div class="modal-actions">
+        <button class="btn gold" id="spinWheelBtn">🎲 Sorteo Aleatorio</button>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn ghost" id="closeWinnerModalBtn">Cancelar</button>
+        <button class="btn primary" id="confirmWinnerBtn">Guardar Ganador</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal WhatsApp Notifications -->
+  <div class="overlay" id="whatsappOverlay">
+    <div class="modal">
+      <h3>📢 Notificaciones por WhatsApp</h3>
+      <p class="sub">Envía o difunde la notificación del número ganador a los participantes.</p>
+
+      <button class="btn gold" style="width:100%; margin-bottom:14px;" id="copyBroadcastTextBtn">📋 Copiar Mensaje Masivo para WhatsApp</button>
+
+      <label>Participantes registrados:</label>
+      <div id="whatsappList" style="max-height: 200px; overflow-y: auto; background: #fff; border: 1px solid #D8D2C1; border-radius: 8px; padding: 10px; margin-top: 6px;"></div>
+
+      <div class="modal-actions">
+        <button class="btn ghost" id="closeWhatsappModalBtn">Cerrar</button>
+      </div>
+    </div>
+  </div>
 
 <script>
 const TOTAL_TICKETS = 100;
 const PRICE = 20000;
 const GOAL = TOTAL_TICKETS * PRICE;
-const STORAGE_KEY = 'rifa-natacion-tickets';
+const LOCAL_KEY = 'rifa-natacion-tickets-v2';
+const WINNER_KEY = 'rifa-natacion-winner-v2';
+const ADMIN_PASS_KEY = 'rifa-natacion-admin-pass';
+
+// Credenciales oficiales Supabase proporcionadas
+const SUPABASE_URL = 'https://xspgkkavkyancugrlhck.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhzcGdra2F2a3lhbmN1Z3JsaGNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxNDYyNjcsImV4cCI6MjEwNDcyMjI2N30.6TDSKiie8nyfM4Hgd-QEPOU8dAo7H0ji7ZpfGStgWG0';
 
 let tickets = {};
-let currentNumber = null;
+let winnerData = null;
+let selectedNumbers = new Set();
+let editingNumber = null; // Para edición en modo admin
+let isAdminMode = false;
+let supabaseClient = null;
 
+// Element references
 const grid = document.getElementById('grid');
 const overlay = document.getElementById('overlay');
 const modalNumber = document.getElementById('modalNumber');
 const modalSub = document.getElementById('modalSub');
 const buyerName = document.getElementById('buyerName');
 const buyerContact = document.getElementById('buyerContact');
+const buyerEmail = document.getElementById('buyerEmail');
+const buyerReceipt = document.getElementById('buyerReceipt');
+const copyReceiptBtn = document.getElementById('copyReceiptBtn');
+const payMethod = document.getElementById('payMethod');
 const buyerPaid = document.getElementById('buyerPaid');
+const paidRow = document.getElementById('paidRow');
 const releaseRow = document.getElementById('releaseRow');
 const searchBox = document.getElementById('searchBox');
+const adminBox = document.getElementById('adminBox');
+const winnerBanner = document.getElementById('winnerBanner');
+
+// Multi-select elements
+const floatingCartBar = document.getElementById('floatingCartBar');
+const cartCount = document.getElementById('cartCount');
+const cartTotal = document.getElementById('cartTotal');
+const openCartModalBtn = document.getElementById('openCartModalBtn');
+const nuTransferAmountText = document.getElementById('nuTransferAmountText');
+
+// Admin Auth Elements
+const adminAuthOverlay = document.getElementById('adminAuthOverlay');
+const adminPassInput = document.getElementById('adminPassInput');
+const adminAuthError = document.getElementById('adminAuthError');
+const changePassOverlay = document.getElementById('changePassOverlay');
+const newPassInput = document.getElementById('newPassInput');
 
 function money(n){
   return '$' + n.toLocaleString('es-CO');
 }
 
-async function loadTickets(){
-  try{
-    const res = await window.storage.get(STORAGE_KEY, false);
-    tickets = res && res.value ? JSON.parse(res.value) : {};
-  }catch(e){
-    tickets = {};
+// Sanitización Anti-XSS de seguridad
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function getAdminPassword(){
+  return localStorage.getItem(ADMIN_PASS_KEY) || 'daniel';
+}
+
+function generateReceiptCode(numsArr){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let rand = '';
+  for(let i = 0; i < 4; i++){
+    rand += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  renderGrid();
+  const prefix = Array.isArray(numsArr) ? numsArr.join('-') : numsArr;
+  return `REF-${prefix}-${rand}`;
+}
+
+// Initialize Supabase client
+function initSupabase(){
+  localStorage.removeItem('supabase_url');
+  localStorage.removeItem('supabase_key');
+
+  if(window.supabase){
+    try{
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      subscribeRealtime();
+      loadTicketsFromSupabase();
+      loadWinnerFromSupabase();
+      return;
+    }catch(e){
+      console.error('Supabase bg init error:', e);
+    }
+  }
+  loadTicketsLocal();
+  loadWinnerLocal();
+}
+
+function subscribeRealtime(){
+  if(!supabaseClient) return;
+  supabaseClient
+    .channel('public:boletas')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'boletas' }, () => {
+      loadTicketsFromSupabase();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'sorteo' }, () => {
+      loadWinnerFromSupabase();
+    })
+    .subscribe();
+}
+
+async function loadTicketsFromSupabase(){
+  if(!supabaseClient) return;
+  try{
+    const { data, error } = await supabaseClient.from('boletas').select('*');
+    if(!error && data){
+      data.forEach(row => {
+        tickets[row.numero] = {
+          name: row.nombre,
+          contact: row.telefono,
+          email: row.email || '',
+          payMethod: row.metodo_pago || 'bre_b_nu',
+          receipt: row.comprobante || '',
+          paid: row.estado === 'pagado'
+        };
+      });
+      saveTicketsLocal();
+      renderGrid(searchBox.value);
+      renderStats();
+    } else {
+      if(error) console.warn('Supabase fetch error:', error.message);
+      loadTicketsLocal();
+    }
+  }catch(e){
+    loadTicketsLocal();
+  }
+}
+
+async function saveTicketToSupabaseBatch(ticketsArr, data){
+  if(!supabaseClient) return;
+  try{
+    const rows = ticketsArr.map(num => ({
+      numero: Number(num),
+      nombre: data.name,
+      telefono: data.contact,
+      email: data.email || '',
+      metodo_pago: data.payMethod || 'bre_b_nu',
+      comprobante: data.receipt || '',
+      estado: data.paid ? 'pagado' : 'pendiente'
+    }));
+
+    const { error } = await supabaseClient.from('boletas').upsert(rows, { onConflict: 'numero' });
+
+    if(error){
+      console.error('Error al guardar en Supabase:', error);
+      if(error.code === '42501'){
+        alert('⚠️ ATENCIÓN ORGANIZADOR:\nRow Level Security (RLS) está activado en Supabase y bloquea el guardado.\n\nPara solucionarlo en 10 segundos:\n1. Ve al SQL Editor en Supabase.\n2. Ejecuta:\nALTER TABLE public.boletas DISABLE ROW LEVEL SECURITY;\nALTER TABLE public.sorteo DISABLE ROW LEVEL SECURITY;');
+      } else {
+        alert('⚠️ Error al guardar en Supabase: ' + error.message);
+      }
+    }
+  }catch(e){
+    console.error('Error saving to supabase:', e);
+  }
+}
+
+async function deleteTicketFromSupabase(num){
+  if(!supabaseClient) return;
+  try{
+    await supabaseClient.from('boletas').delete().eq('numero', num);
+  }catch(e){
+    console.error('Error deleting from supabase:', e);
+  }
+}
+
+async function loadWinnerFromSupabase(){
+  if(!supabaseClient) return;
+  try{
+    const { data } = await supabaseClient.from('sorteo').select('*').eq('id', 1).single();
+    if(data && data.numero_ganador){
+      winnerData = { number: data.numero_ganador, name: data.ganador_nombre };
+      renderWinnerBanner();
+      renderGrid(searchBox.value);
+    }
+  }catch(e){}
+}
+
+async function saveWinnerToSupabase(num, name){
+  if(!supabaseClient) return;
+  try{
+    await supabaseClient.from('sorteo').upsert({
+      id: 1,
+      numero_ganador: num,
+      ganador_nombre: name,
+      fecha_sorteo: new Date().toISOString()
+    }, { onConflict: 'id' });
+  }catch(e){}
+}
+
+function loadTicketsLocal(){
+  try{
+    const raw = localStorage.getItem(LOCAL_KEY);
+    tickets = raw ? JSON.parse(raw) : {};
+  }catch(e){ tickets = {}; }
+  renderGrid(searchBox.value);
   renderStats();
 }
 
-async function saveTickets(){
+function saveTicketsLocal(){
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(tickets));
+}
+
+function loadWinnerLocal(){
   try{
-    await window.storage.set(STORAGE_KEY, JSON.stringify(tickets), false);
-  }catch(e){
-    console.error('No se pudo guardar', e);
+    const raw = localStorage.getItem(WINNER_KEY);
+    winnerData = raw ? JSON.parse(raw) : null;
+    renderWinnerBanner();
+  }catch(e){}
+}
+
+function saveWinnerLocal(num, name){
+  winnerData = { number: num, name };
+  localStorage.setItem(WINNER_KEY, JSON.stringify(winnerData));
+  renderWinnerBanner();
+  renderGrid(searchBox.value);
+}
+
+function renderWinnerBanner(){
+  if(winnerData && winnerData.number){
+    document.getElementById('bannerWinnerNum').textContent = '#' + winnerData.number;
+    document.getElementById('bannerWinnerName').textContent = escapeHtml(winnerData.name) || 'Comprador Desconocido';
+    winnerBanner.classList.add('active');
+  } else {
+    winnerBanner.classList.remove('active');
   }
 }
 
@@ -454,18 +1017,66 @@ function renderGrid(filter){
   const q = (filter || '').trim().toLowerCase();
   for(let i = 1; i <= TOTAL_TICKETS; i++){
     const t = tickets[i];
+    const isSelected = selectedNumbers.has(i);
     const tile = document.createElement('button');
     tile.className = 'tile';
     tile.textContent = i;
-    if(t){
+
+    if(winnerData && Number(winnerData.number) === i){
+      tile.className += ' winner';
+      tile.title = '🏆 GANADOR: ' + (t ? escapeHtml(t.name) : '');
+    } else if(isSelected){
+      tile.className += ' selected';
+    } else if(t){
       tile.className += t.paid ? ' paid' : ' sold';
-      tile.title = t.name + (t.contact ? ' · ' + t.contact : '');
+      tile.title = escapeHtml(t.name) + (t.contact ? ' · ' + escapeHtml(t.contact) : '');
     }
-    if(q && (!t || !t.name.toLowerCase().includes(q))){
+
+    if(q && (!t || !(t.name.toLowerCase().includes(q) || String(i).includes(q)))){
       tile.className += ' dim';
     }
-    tile.addEventListener('click', () => openModal(i));
+    tile.addEventListener('click', () => handleTileClick(i));
     grid.appendChild(tile);
+  }
+  updateFloatingCartBar();
+}
+
+function handleTileClick(number){
+  const t = tickets[number];
+  
+  if(t){
+    // Si la boleta está ocupada
+    if(isAdminMode){
+      // En modo admin abre edición de esta boleta específica
+      editingNumber = number;
+      openModalForSingle(number);
+    } else {
+      alert(`La boleta #${number} ya fue reservada por ${t.name}. Elige una boleta disponible en color crema.`);
+    }
+    return;
+  }
+
+  // Si la boleta está libre
+  if(selectedNumbers.has(number)){
+    selectedNumbers.delete(number);
+  } else {
+    if(selectedNumbers.size >= 10){
+      alert('Por seguridad, puedes reservar un máximo de 10 boletas por transacción.');
+      return;
+    }
+    selectedNumbers.add(number);
+  }
+  renderGrid(searchBox.value);
+}
+
+function updateFloatingCartBar(){
+  const count = selectedNumbers.size;
+  if(count > 0){
+    cartCount.textContent = count;
+    cartTotal.textContent = money(count * PRICE);
+    floatingCartBar.classList.add('active');
+  } else {
+    floatingCartBar.classList.remove('active');
   }
 }
 
@@ -484,55 +1095,167 @@ function renderStats(){
   document.getElementById('progressNote').textContent = pct + '% de la meta recaudada';
 }
 
-function openModal(number){
-  currentNumber = number;
+function openModalForCart(){
+  if(selectedNumbers.size === 0) return;
+  editingNumber = null;
+
+  const numsArr = Array.from(selectedNumbers).sort((a,b) => a - b);
+  modalNumber.textContent = numsArr.map(n => '#' + n).join(', ');
+  modalSub.textContent = `Reservando ${numsArr.length} boleta(s) · Total: ${money(numsArr.length * PRICE)}`;
+  
+  buyerName.value = '';
+  buyerContact.value = '';
+  buyerEmail.value = '';
+  buyerReceipt.value = generateReceiptCode(numsArr);
+  payMethod.value = 'bre_b_nu';
+  buyerPaid.checked = false;
+  releaseRow.style.display = 'none';
+  paidRow.style.display = isAdminMode ? 'flex' : 'none';
+  nuTransferAmountText.textContent = `Transfiere ${money(numsArr.length * PRICE)} usando la siguiente llave:`;
+
+  overlay.classList.add('open');
+  buyerName.focus();
+}
+
+function openModalForSingle(number){
   const t = tickets[number];
   modalNumber.textContent = '#' + number;
+  
   if(t){
-    modalSub.textContent = 'Editar comprador de esta boleta';
+    modalSub.textContent = 'Información / Edición de la Boleta';
     buyerName.value = t.name || '';
     buyerContact.value = t.contact || '';
+    buyerEmail.value = t.email || '';
+    buyerReceipt.value = t.receipt || generateReceiptCode([number]);
+    payMethod.value = t.payMethod || 'bre_b_nu';
     buyerPaid.checked = !!t.paid;
-    releaseRow.style.display = 'flex';
-  } else {
-    modalSub.textContent = 'Registrar comprador';
-    buyerName.value = '';
-    buyerContact.value = '';
-    buyerPaid.checked = false;
-    releaseRow.style.display = 'none';
+    releaseRow.style.display = isAdminMode ? 'flex' : 'none';
+    nuTransferAmountText.textContent = `Transfiere $20.000 usando la siguiente llave:`;
   }
+  paidRow.style.display = isAdminMode ? 'flex' : 'none';
+
   overlay.classList.add('open');
   buyerName.focus();
 }
 
 function closeModal(){
   overlay.classList.remove('open');
-  currentNumber = null;
+  editingNumber = null;
 }
 
 document.getElementById('cancelBtn').addEventListener('click', closeModal);
 overlay.addEventListener('click', (e) => { if(e.target === overlay) closeModal(); });
+openCartModalBtn.addEventListener('click', openModalForCart);
 
+// Copy Bre-B Key
+document.getElementById('copyKeyBtn').addEventListener('click', () => {
+  navigator.clipboard.writeText('3024175420');
+  const btn = document.getElementById('copyKeyBtn');
+  btn.textContent = 'Copiado ✓';
+  setTimeout(() => btn.textContent = '📋 Copiar Llave', 1500);
+});
+
+// Copy Receipt Code
+copyReceiptBtn.addEventListener('click', () => {
+  const code = buyerReceipt.value;
+  navigator.clipboard.writeText(code);
+  copyReceiptBtn.textContent = 'Copiado ✓';
+  setTimeout(() => copyReceiptBtn.textContent = '📋 Copiar', 1500);
+});
+
+// Save Ticket Reservation with Race-Condition & Security Validation
 document.getElementById('saveBtn').addEventListener('click', async () => {
-  const name = buyerName.value.trim();
-  if(!name){
+  const rawName = buyerName.value.trim();
+  const rawContact = buyerContact.value.trim();
+
+  if(!rawName){
+    alert('Por favor ingresa tu Nombre Completo');
     buyerName.focus();
     return;
   }
-  tickets[currentNumber] = {
+  if(!rawContact){
+    alert('Por favor ingresa tu Celular o WhatsApp');
+    buyerContact.focus();
+    return;
+  }
+
+  // Sanitización de seguridad Anti-XSS
+  const name = escapeHtml(rawName);
+  const contact = escapeHtml(rawContact);
+  const email = escapeHtml(buyerEmail.value.trim());
+
+  let targetNumbers = [];
+  if(editingNumber){
+    targetNumbers = [editingNumber];
+  } else {
+    targetNumbers = Array.from(selectedNumbers).sort((a,b) => a - b);
+  }
+
+  if(targetNumbers.length === 0){
+    alert('No hay boletas seleccionadas.');
+    return;
+  }
+
+  // Verificación de Seguridad Anti-Reserva-Doble en Vivo con Supabase
+  if(supabaseClient && !editingNumber){
+    try{
+      const { data: conflicts } = await supabaseClient.from('boletas').select('numero').in('numero', targetNumbers);
+      if(conflicts && conflicts.length > 0){
+        const occupiedNums = conflicts.map(c => '#' + c.numero).join(', ');
+        alert(`⚠️ ATENCIÓN DE SEGURIDAD:\nLas boletas ${occupiedNums} ya fueron reservadas por otra persona hace un momento.\n\nEl tablero se actualizará para que elijas otros números disponibles.`);
+        selectedNumbers.clear();
+        await loadTicketsFromSupabase();
+        closeModal();
+        return;
+      }
+    }catch(e){}
+  }
+
+  const receiptCode = buyerReceipt.value.trim() || generateReceiptCode(targetNumbers);
+  const totalPrice = targetNumbers.length * PRICE;
+
+  const data = {
     name,
-    contact: buyerContact.value.trim(),
-    paid: buyerPaid.checked
+    contact,
+    email,
+    payMethod: payMethod.value,
+    receipt: receiptCode,
+    paid: isAdminMode ? buyerPaid.checked : false
   };
-  await saveTickets();
+
+  // Guardar todas las boletas seleccionadas
+  targetNumbers.forEach(num => {
+    tickets[num] = { ...data };
+  });
+  saveTicketsLocal();
+
+  if(supabaseClient){
+    await saveTicketToSupabaseBatch(targetNumbers, data);
+  }
+
+  const reservedList = targetNumbers.map(n => '#' + n).join(', ');
+  selectedNumbers.clear();
   renderGrid(searchBox.value);
   renderStats();
   closeModal();
+
+  if(!isAdminMode){
+    alert(`¡Boleta(s) ${reservedList} reservada(s) con éxito!\n\n📌 Código de Comprobante: ${receiptCode}\n💰 Total a pagar: ${money(totalPrice)}\n\nRecuerda realizar el pago a la llave Bre-B (Nu): 3024175420 indicando tu código en la transferencia.`);
+  }
 });
 
+// Release Ticket
 document.getElementById('releaseBtn').addEventListener('click', async () => {
-  delete tickets[currentNumber];
-  await saveTickets();
+  if(!editingNumber) return;
+  if(!confirm('¿Estás seguro de liberar la boleta #' + editingNumber + '?')) return;
+  
+  delete tickets[editingNumber];
+  saveTicketsLocal();
+  
+  if(supabaseClient){
+    await deleteTicketFromSupabase(editingNumber);
+  }
+
   renderGrid(searchBox.value);
   renderStats();
   closeModal();
@@ -540,23 +1263,174 @@ document.getElementById('releaseBtn').addEventListener('click', async () => {
 
 searchBox.addEventListener('input', () => renderGrid(searchBox.value));
 
+// Export List
 document.getElementById('exportBtn').addEventListener('click', async () => {
   const lines = Object.entries(tickets)
     .sort((a,b) => Number(a[0]) - Number(b[0]))
-    .map(([num, t]) => `#${num} — ${t.name}${t.contact ? ' — ' + t.contact : ''} — ${t.paid ? 'Pagado' : 'Pendiente'}`);
-  const text = lines.length ? lines.join('\n') : 'Aún no hay boletas registradas.';
+    .map(([num, t]) => `#${num} — ${t.name} (Tel: ${t.contact}) — Ref: ${t.receipt || 'S/N'} — Método: ${t.payMethod === 'bre_b_nu' ? 'Bre-B Nu' : 'Efectivo'} — ${t.paid ? 'PAGADO' : 'PENDIENTE'}`);
+  
+  const text = lines.length ? 'LISTA DE COMPRADORES - RIFA NATACIÓN:\n' + lines.join('\n') : 'Aún no hay boletas registradas.';
   try{
     await navigator.clipboard.writeText(text);
     const btn = document.getElementById('exportBtn');
-    const original = btn.textContent;
     btn.textContent = 'Copiado ✓';
-    setTimeout(() => btn.textContent = original, 1500);
+    setTimeout(() => btn.textContent = '📋 Copiar lista de compradores', 1500);
   }catch(e){
     alert(text);
   }
 });
 
-loadTickets();
+// Admin Toggle with Password Protection
+const toggleAdminBtn = document.getElementById('toggleAdminBtn');
+toggleAdminBtn.addEventListener('click', () => {
+  if(isAdminMode){
+    // Logout
+    isAdminMode = false;
+    toggleAdminBtn.textContent = '🔓 Modo Admin';
+    toggleAdminBtn.style.background = 'var(--deep)';
+    adminBox.classList.remove('active');
+    selectedNumbers.clear();
+    renderGrid(searchBox.value);
+  } else {
+    // Request password
+    adminPassInput.value = '';
+    adminAuthError.style.display = 'none';
+    adminAuthOverlay.classList.add('open');
+    adminPassInput.focus();
+  }
+});
+
+document.getElementById('cancelAuthBtn').addEventListener('click', () => {
+  adminAuthOverlay.classList.remove('open');
+});
+
+document.getElementById('submitAuthBtn').addEventListener('click', () => {
+  const inputPass = adminPassInput.value.trim();
+  const realPass = getAdminPassword();
+
+  if(inputPass === realPass){
+    isAdminMode = true;
+    toggleAdminBtn.textContent = '🔒 Salir de Admin';
+    toggleAdminBtn.style.background = 'var(--coral)';
+    adminBox.classList.add('active');
+    adminAuthOverlay.classList.remove('open');
+    selectedNumbers.clear();
+    renderGrid(searchBox.value);
+  } else {
+    adminAuthError.style.display = 'block';
+    adminPassInput.focus();
+  }
+});
+
+adminPassInput.addEventListener('keyup', (e) => {
+  if(e.key === 'Enter') document.getElementById('submitAuthBtn').click();
+});
+
+// Change Admin Password Modal
+document.getElementById('changePassBtn').addEventListener('click', () => {
+  newPassInput.value = '';
+  changePassOverlay.classList.add('open');
+  newPassInput.focus();
+});
+document.getElementById('cancelChangePassBtn').addEventListener('click', () => changePassOverlay.classList.remove('open'));
+document.getElementById('saveNewPassBtn').addEventListener('click', () => {
+  const newPass = newPassInput.value.trim();
+  if(!newPass){
+    alert('Por favor ingresa la nueva contraseña.');
+    return;
+  }
+  localStorage.setItem(ADMIN_PASS_KEY, newPass);
+  changePassOverlay.classList.remove('open');
+  alert('¡Contraseña de Administrador actualizada con éxito!');
+});
+
+// SQL Modal Trigger
+const sqlModalOverlay = document.getElementById('sqlModalOverlay');
+document.getElementById('viewSqlModalBtn').addEventListener('click', () => sqlModalOverlay.classList.add('open'));
+document.getElementById('closeSqlModalBtn').addEventListener('click', () => sqlModalOverlay.classList.remove('open'));
+document.getElementById('copySqlBtn').addEventListener('click', () => {
+  const sql = document.getElementById('sqlBox').textContent;
+  navigator.clipboard.writeText(sql);
+  alert('Script SQL copiado. Pégalo en el SQL Editor de tu Supabase y presiona Run.');
+});
+
+// Winner Selection Modal
+const winnerOverlay = document.getElementById('winnerOverlay');
+document.getElementById('drawWinnerBtn').addEventListener('click', () => winnerOverlay.classList.add('open'));
+document.getElementById('closeWinnerModalBtn').addEventListener('click', () => winnerOverlay.classList.remove('open'));
+
+// Spin wheel random draw
+document.getElementById('spinWheelBtn').addEventListener('click', () => {
+  const soldNumbers = Object.keys(tickets);
+  if(soldNumbers.length === 0){
+    alert('No hay boletas vendidas aún para realizar el sorteo.');
+    return;
+  }
+  let counter = 0;
+  const interval = setInterval(() => {
+    const randomPick = soldNumbers[Math.floor(Math.random() * soldNumbers.length)];
+    document.getElementById('manualWinnerNum').value = randomPick;
+    counter++;
+    if(counter > 25){
+      clearInterval(interval);
+    }
+  }, 80);
+});
+
+document.getElementById('confirmWinnerBtn').addEventListener('click', async () => {
+  const num = Number(document.getElementById('manualWinnerNum').value);
+  if(!num || num < 1 || num > 100){
+    alert('Ingresa un número de boleta válido entre 1 y 100.');
+    return;
+  }
+  const t = tickets[num];
+  const name = t ? t.name : 'Boleta sin registrar';
+
+  saveWinnerLocal(num, name);
+  if(supabaseClient){
+    await saveWinnerToSupabase(num, name);
+  }
+  winnerOverlay.classList.remove('open');
+  alert('🏆 ¡El ganador oficial es la boleta #' + num + ' (' + name + ')!');
+});
+
+// WhatsApp Notifications Modal
+const whatsappOverlay = document.getElementById('whatsappOverlay');
+document.getElementById('whatsappBroadcastBtn').addEventListener('click', () => {
+  const list = document.getElementById('whatsappList');
+  list.innerHTML = '';
+  
+  const entries = Object.entries(tickets).sort((a,b) => Number(a[0]) - Number(b[0]));
+  if(entries.length === 0){
+    list.innerHTML = '<p style="font-size:12px; color:#5B6E70;">No hay participantes registrados.</p>';
+  } else {
+    entries.forEach(([num, t]) => {
+      const cleanPhone = t.contact.replace(/\D/g, '');
+      const item = document.createElement('div');
+      item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #eee; font-size:12px;';
+      
+      const msg = encodeURIComponent(`¡Hola ${t.name}! 🏊‍♂️ Te notificamos que el sorteo de la Rifa Copa de Natación ha finalizado. El número GANADOR es el #${winnerData ? winnerData.number : '----'}. ¡Gracias por apoyar nuestro equipo!`);
+      const waUrl = `https://wa.me/57${cleanPhone}?text=${msg}`;
+      
+      item.innerHTML = `<span><b>#${num}</b> ${escapeHtml(t.name)} (${escapeHtml(t.contact)})</span> <a href="${waUrl}" target="_blank" style="color:#071C24; font-weight:bold; text-decoration:none; background:#5FE0C9; padding:4px 8px; border-radius:4px;">💬 WhatsApp</a>`;
+      list.appendChild(item);
+    });
+  }
+  whatsappOverlay.classList.add('open');
+});
+document.getElementById('closeWhatsappModalBtn').addEventListener('click', () => whatsappOverlay.classList.remove('open'));
+
+document.getElementById('copyBroadcastTextBtn').addEventListener('click', () => {
+  const winNum = winnerData ? winnerData.number : '---';
+  const winName = winnerData ? winnerData.name : '---';
+  const broadcastText = `🏊‍♂️ *RESULTADO RIFA COPA DE NATACIÓN* 🏊‍♂️\n\n🎉 ¡Queremos agradecer a todos los participantes por apoyar a nuestro equipo de natación!\n\n🏆 *NÚMERO GANADOR:* #${winNum}\n👤 *GANADOR(A):* ${winName}\n💰 *PREMIO:* $400.000 COP\n\n¡Felicitaciones al ganador y muchas gracias a todos por hacer posible nuestro viaje al torneo! ❤️🏊‍♂️`;
+  
+  navigator.clipboard.writeText(broadcastText);
+  alert('Mensaje masivo copiado al portapapeles. ¡Listo para enviar en grupos o listas de difusión de WhatsApp!');
+});
+
+// Initialize on load
+initSupabase();
 </script>
 </body>
 </html>
