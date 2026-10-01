@@ -12,7 +12,7 @@
   { "numero": 30, "nombre": "Leandro clavados", "telefono": "3229327279", "email": "", "metodo_pago": "bre_b_nu", "comprobante": "REF-30-QH7P", "estado": "pagado" },
   { "numero": 33, "nombre": "Stephenie jordan", "telefono": "3104655765", "email": "fernando8603@hotmail.com", "metodo_pago": "efectivo", "comprobante": "REF-33-C6ZR", "estado": "pagado" },
   { "numero": 37, "nombre": "Lucho piscinas", "telefono": "3125777097", "email": "", "metodo_pago": "bre_b_nu", "comprobante": "REF-37-4LM8", "estado": "pagado" },
-  { "numero": 40, "nombre": "Profe chuco ospina", "telefono": "3006686622", "email": "", "metodo_pago": "bre_b_nu", "comprobante": "REF-40-Z6JS", "estado": "pendiente" },
+  { "numero": 40, "nombre": "Profe chuco ospina", "telefono": "3006686622", "email": "", "metodo_pago": "bre_b_nu", "comprobante": "REF-40-Z6JS", "estado": "pagado" },
   { "numero": 43, "nombre": "Alejando rojas", "telefono": "3212019257", "email": "", "metodo_pago": "efectivo", "comprobante": "REF-43-JP2C", "estado": "pagado" },
   { "numero": 44, "nombre": "Yeison olaya", "telefono": "313 8117771", "email": "", "metodo_pago": "bre_b_nu", "comprobante": "REF-44-VGT4", "estado": "pendiente" },
   { "numero": 45, "nombre": "Diana acosta", "telefono": "3107677715", "email": "", "metodo_pago": "bre_b_nu", "comprobante": "REF-45-H8VY", "estado": "pagado" },
