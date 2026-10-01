@@ -208,6 +208,12 @@
     font-size:22px;
     margin:0;
   }
+  .filter-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
   input[type="text"], input[type="tel"], input[type="email"], input[type="password"], select{
     background:var(--mid);
     border:1px solid var(--line);
@@ -276,6 +282,64 @@
     to { transform: translateY(-6px); }
   }
   .tile.dim{opacity:0.25;}
+  .tile.hidden{display:none !important;}
+
+  /* ---------- Filter Pills ---------- */
+  .filter-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .pill-btn {
+    background: var(--mid);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    padding: 7px 13px;
+    border-radius: 20px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .pill-btn:hover {
+    border-color: var(--aqua);
+    color: var(--text);
+  }
+  .pill-btn.active {
+    background: var(--aqua);
+    color: var(--black);
+    border-color: var(--aqua);
+    font-weight: 700;
+  }
+  .pill-btn.pill-paid.active {
+    background: #5FE0C9;
+    color: #071C24;
+  }
+  .pill-btn.pill-pending.active {
+    background: #FFD700;
+    color: #071C24;
+  }
+  .pill-btn.pill-free.active {
+    background: var(--cream);
+    color: var(--ink);
+  }
+
+  .buyer-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  }
 
   .legend{
     display:flex;
@@ -368,7 +432,7 @@
   }
   .export-btn:hover{border-color:var(--aqua); color:var(--aqua);}
 
-  /* Floating Multi-Select Cart Bar */
+  /* Floating Multi-Ticket Bar */
   .floating-cart-bar {
     position: fixed;
     bottom: 24px;
@@ -565,9 +629,26 @@
     <div class="layout">
       <div class="board">
         <div class="board-head">
-          <h2>Tablero de boletas</h2>
-          <input type="text" id="searchBox" placeholder="Buscar comprador o #...">
+          <div>
+            <h2>Tablero de boletas</h2>
+          </div>
+          <div class="filter-group">
+            <input type="text" id="searchBox" placeholder="🔍 Buscar comprador o #...">
+          </div>
         </div>
+
+        <!-- Filter Tabs / Pills -->
+        <div class="filter-pills" id="filterPills">
+          <button class="pill-btn active" data-filter="todos">📋 Todas (<span id="countAll">100</span>)</button>
+          <button class="pill-btn pill-paid" data-filter="pagado">🟢 Pagadas (<span id="countPaid">0</span>)</button>
+          <button class="pill-btn pill-pending" data-filter="pendiente">🟡 Pendientes (<span id="countPending">0</span>)</button>
+          <button class="pill-btn pill-free" data-filter="disponible">⚪ Disponibles (<span id="countFree">100</span>)</button>
+          <select id="filterMode" style="padding:5px 10px; font-size:12px; border-radius:14px; margin-left:auto; background:var(--deep); border:1px solid var(--line); color:var(--text);">
+            <option value="dim">Opacar otros</option>
+            <option value="hide">Ocultar otros</option>
+          </select>
+        </div>
+
         <div class="grid" id="grid"></div>
         <div class="legend">
           <span><span class="dot free"></span>Disponible</span>
@@ -587,11 +668,13 @@
         <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
         <p class="progress-note" id="progressNote">0% de la meta</p>
         
-        <button class="export-btn" id="exportBtn">📋 Copiar lista de compradores</button>
+        <button class="export-btn" style="background:var(--aqua); color:var(--black); font-weight:700; border:none; margin-bottom:8px;" id="openBuyersModalBtn">👥 Ver Lista de Compradores</button>
+        <button class="export-btn" id="exportBtn">📋 Copiar lista en texto</button>
 
         <!-- Admin Controls Panel -->
         <div class="admin-box" id="adminBox">
           <div class="admin-title">👑 Opciones de Organizador</div>
+          <button class="export-btn" style="border-color:var(--aqua); color:var(--aqua); font-weight:700; margin-bottom:8px;" id="adminBuyersBtn">👥 Gestionar Compradores y Pagos</button>
           <button class="export-btn" style="border-color:var(--gold); color:var(--gold);" id="drawWinnerBtn">🏆 Realizar Sorteo / Ganador</button>
           <button class="export-btn" style="border-color:var(--aqua); color:var(--aqua);" id="whatsappBroadcastBtn">📢 WhatsApp / Notificaciones</button>
           <button class="export-btn" style="border-color:rgba(95,224,201,0.5);" id="viewSqlModalBtn">📜 Script SQL Supabase</button>
@@ -771,6 +854,33 @@ ALTER TABLE public.sorteo DISABLE ROW LEVEL SECURITY;</div>
         <button class="btn ghost" id="closeWhatsappModalBtn">Cerrar</button>
       </div>
     </div>
+  <!-- Modal Interactive Buyers List & Payment Filter -->
+  <div class="overlay" id="buyersModalOverlay">
+    <div class="modal" style="max-width: 650px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <h3 style="margin:0; font-size:24px; color:var(--black);">👥 Lista de Compradores</h3>
+        <button class="btn-sm" id="closeBuyersModalX" style="background:transparent; border:none; font-size:18px; cursor:pointer; color:var(--ink);">✕</button>
+      </div>
+      <p class="sub" style="margin-bottom:14px;">Filtra rápidamente por pagos confirmados o pendientes y gestiona tus participantes.</p>
+
+      <!-- Modal Filter Tabs -->
+      <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+        <button class="pill-btn modal-filter-pill active" data-mfilter="todos">📋 Todos (<span id="mCountAll">0</span>)</button>
+        <button class="pill-btn modal-filter-pill pill-paid" data-mfilter="pagado">🟢 Solo Pagados (<span id="mCountPaid">0</span>)</button>
+        <button class="pill-btn modal-filter-pill pill-pending" data-mfilter="pendiente">🟡 Solo Pendientes (<span id="mCountPending">0</span>)</button>
+      </div>
+
+      <input type="text" id="modalSearchBox" placeholder="🔍 Buscar por nombre, celular, # o comprobante..." style="width:100%; margin-bottom:14px; border:1px solid #D8D2C1;">
+
+      <div id="buyersListContainer" style="max-height: 380px; overflow-y: auto; padding-right: 4px;">
+        <!-- Dynamic buyer cards -->
+      </div>
+
+      <div class="modal-actions" style="margin-top:16px;">
+        <button class="btn ghost" id="closeBuyersModalBtn">Cerrar</button>
+        <button class="btn primary" id="modalCopyListBtn">📋 Copiar Lista Completa</button>
+      </div>
+    </div>
   </div>
 
 <script>
@@ -788,7 +898,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 let tickets = {};
 let winnerData = null;
 let selectedNumbers = new Set();
-let editingNumber = null; // Para edición en modo admin
+let editingNumber = null;
 let isAdminMode = false;
 let supabaseClient = null;
 
@@ -807,6 +917,7 @@ const buyerPaid = document.getElementById('buyerPaid');
 const paidRow = document.getElementById('paidRow');
 const releaseRow = document.getElementById('releaseRow');
 const searchBox = document.getElementById('searchBox');
+const filterStatus = document.getElementById('filterStatus');
 const adminBox = document.getElementById('adminBox');
 const winnerBanner = document.getElementById('winnerBanner');
 
@@ -902,7 +1013,7 @@ async function loadTicketsFromSupabase(){
         };
       });
       saveTicketsLocal();
-      renderGrid(searchBox.value);
+      renderGrid();
       renderStats();
     } else {
       if(error) console.warn('Supabase fetch error:', error.message);
@@ -957,7 +1068,7 @@ async function loadWinnerFromSupabase(){
     if(data && data.numero_ganador){
       winnerData = { number: data.numero_ganador, name: data.ganador_nombre };
       renderWinnerBanner();
-      renderGrid(searchBox.value);
+      renderGrid();
     }
   }catch(e){}
 }
@@ -979,7 +1090,7 @@ function loadTicketsLocal(){
     const raw = localStorage.getItem(LOCAL_KEY);
     tickets = raw ? JSON.parse(raw) : {};
   }catch(e){ tickets = {}; }
-  renderGrid(searchBox.value);
+  renderGrid();
   renderStats();
 }
 
@@ -999,7 +1110,7 @@ function saveWinnerLocal(num, name){
   winnerData = { number: num, name };
   localStorage.setItem(WINNER_KEY, JSON.stringify(winnerData));
   renderWinnerBanner();
-  renderGrid(searchBox.value);
+  renderGrid();
 }
 
 function renderWinnerBanner(){
@@ -1012,15 +1123,59 @@ function renderWinnerBanner(){
   }
 }
 
-function renderGrid(filter){
+let currentStatusFilter = 'todos';
+let currentFilterMode = 'dim';
+let currentModalFilter = 'todos';
+
+function renderGrid(){
   grid.innerHTML = '';
-  const q = (filter || '').trim().toLowerCase();
+  const q = (searchBox.value || '').trim().toLowerCase();
+
+  let soldCount = 0;
+  let paidCount = 0;
+  let pendingCount = 0;
+
+  for(let i = 1; i <= TOTAL_TICKETS; i++){
+    const t = tickets[i];
+    if(t){
+      soldCount++;
+      if(t.paid) paidCount++;
+      else pendingCount++;
+    }
+  }
+  const freeCount = TOTAL_TICKETS - soldCount;
+
+  // Counter badges on filter pills
+  if(document.getElementById('countAll')) document.getElementById('countAll').textContent = TOTAL_TICKETS;
+  if(document.getElementById('countPaid')) document.getElementById('countPaid').textContent = paidCount;
+  if(document.getElementById('countPending')) document.getElementById('countPending').textContent = pendingCount;
+  if(document.getElementById('countFree')) document.getElementById('countFree').textContent = freeCount;
+
+  if(document.getElementById('mCountAll')) document.getElementById('mCountAll').textContent = soldCount;
+  if(document.getElementById('mCountPaid')) document.getElementById('mCountPaid').textContent = paidCount;
+  if(document.getElementById('mCountPending')) document.getElementById('mCountPending').textContent = pendingCount;
+
   for(let i = 1; i <= TOTAL_TICKETS; i++){
     const t = tickets[i];
     const isSelected = selectedNumbers.has(i);
     const tile = document.createElement('button');
     tile.className = 'tile';
     tile.textContent = i;
+    let isMatch = true;
+
+    // Filtro por Estado (pagado, pendiente, disponible, todos)
+    if(currentStatusFilter === 'pagado' && (!t || !t.paid)){
+      isMatch = false;
+    } else if(currentStatusFilter === 'pendiente' && (!t || t.paid)){
+      isMatch = false;
+    } else if(currentStatusFilter === 'disponible' && t){
+      isMatch = false;
+    }
+
+    // Filtro por Búsqueda de Texto o Número o Comprobante
+    if(q && (!t || !(t.name.toLowerCase().includes(q) || String(i).includes(q) || (t.receipt && t.receipt.toLowerCase().includes(q))))){
+      isMatch = false;
+    }
 
     if(winnerData && Number(winnerData.number) === i){
       tile.className += ' winner';
@@ -1032,8 +1187,12 @@ function renderGrid(filter){
       tile.title = escapeHtml(t.name) + (t.contact ? ' · ' + escapeHtml(t.contact) : '');
     }
 
-    if(q && (!t || !(t.name.toLowerCase().includes(q) || String(i).includes(q)))){
-      tile.className += ' dim';
+    if(!isMatch){
+      if(currentFilterMode === 'hide'){
+        tile.className += ' hidden';
+      } else {
+        tile.className += ' dim';
+      }
     }
     tile.addEventListener('click', () => handleTileClick(i));
     grid.appendChild(tile);
@@ -1041,13 +1200,88 @@ function renderGrid(filter){
   updateFloatingCartBar();
 }
 
+function renderBuyersList(){
+  const container = document.getElementById('buyersListContainer');
+  if(!container) return;
+  
+  container.innerHTML = '';
+  const q = (document.getElementById('modalSearchBox').value || '').trim().toLowerCase();
+
+  const entries = Object.entries(tickets)
+    .sort((a,b) => Number(a[0]) - Number(b[0]))
+    .filter(([num, t]) => {
+      if(currentModalFilter === 'pagado' && !t.paid) return false;
+      if(currentModalFilter === 'pendiente' && t.paid) return false;
+      if(q){
+        const textToSearch = `${num} ${t.name} ${t.contact} ${t.receipt || ''}`.toLowerCase();
+        if(!textToSearch.includes(q)) return false;
+      }
+      return true;
+    });
+
+  if(entries.length === 0){
+    container.innerHTML = '<div style="text-align:center; padding:30px; color:#5B6E70; font-size:13.5px;">No se encontraron compradores para este filtro.</div>';
+    return;
+  }
+
+  entries.forEach(([num, t]) => {
+    const card = document.createElement('div');
+    card.className = 'buyer-card';
+    card.style.borderLeft = `5px solid ${t.paid ? '#5FE0C9' : '#FFD700'}`;
+
+    const cleanPhone = t.contact.replace(/\D/g, '');
+    const waMsg = encodeURIComponent(`Hola ${t.name}! 🏊‍♂️ Te contactamos de la Rifa Copa de Natación respecto a tu boleta #${num}.`);
+    const waLink = `https://wa.me/57${cleanPhone}?text=${waMsg}`;
+
+    card.innerHTML = `
+      <div style="flex:1;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="background:#071C24; color:#FF5A36; font-family:'JetBrains Mono', monospace; font-weight:700; padding:2px 8px; border-radius:6px; font-size:13px;">#${num}</span>
+          <strong style="color:#071C24; font-size:14.5px;">${escapeHtml(t.name)}</strong>
+          <span style="font-size:11px; padding:2px 8px; border-radius:12px; font-weight:700; ${t.paid ? 'background:#D1FADF; color:#027A48;' : 'background:#FEF0C7; color:#B54708;'}">
+            ${t.paid ? '🟢 PAGADO' : '🟡 PENDIENTE'}
+          </span>
+        </div>
+        <div style="font-size:12px; color:#4A5D5F; margin-top:4px;">
+          📞 Tel: ${escapeHtml(t.contact)} · 💳 ${t.payMethod === 'bre_b_nu' ? 'Bre-B Nu' : 'Efectivo'}
+          ${t.receipt ? `· 🔖 Ref: <code style="color:#071C24; font-weight:600;">${escapeHtml(t.receipt)}</code>` : ''}
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+        <a href="${waLink}" target="_blank" class="btn-sm" style="background:#25D366; color:#fff; border:none; text-decoration:none; font-weight:600; padding:6px 10px;">💬 WhatsApp</a>
+        ${isAdminMode ? `
+          <button class="btn-sm toggle-paid-btn" data-num="${num}" style="background:${t.paid ? '#FFE4E1' : '#E6F4EA'}; color:${t.paid ? '#D92D20' : '#027A48'}; border:1px solid ${t.paid ? '#FDA29B' : '#A6F4C5'};">
+            ${t.paid ? 'Marcar Pendiente' : '✓ Confirmar Pago'}
+          </button>
+        ` : ''}
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+
+  container.querySelectorAll('.toggle-paid-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const targetNum = Number(e.currentTarget.getAttribute('data-num'));
+      if(tickets[targetNum]){
+        tickets[targetNum].paid = !tickets[targetNum].paid;
+        saveTicketsLocal();
+        if(supabaseClient){
+          await saveTicketToSupabaseBatch([targetNum], tickets[targetNum]);
+        }
+        renderGrid();
+        renderStats();
+        renderBuyersList();
+      }
+    });
+  });
+}
+
 function handleTileClick(number){
   const t = tickets[number];
   
   if(t){
-    // Si la boleta está ocupada
     if(isAdminMode){
-      // En modo admin abre edición de esta boleta específica
       editingNumber = number;
       openModalForSingle(number);
     } else {
@@ -1056,7 +1290,6 @@ function handleTileClick(number){
     return;
   }
 
-  // Si la boleta está libre
   if(selectedNumbers.has(number)){
     selectedNumbers.delete(number);
   } else {
@@ -1066,7 +1299,7 @@ function handleTileClick(number){
     }
     selectedNumbers.add(number);
   }
-  renderGrid(searchBox.value);
+  renderGrid();
 }
 
 function updateFloatingCartBar(){
@@ -1179,7 +1412,6 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     return;
   }
 
-  // Sanitización de seguridad Anti-XSS
   const name = escapeHtml(rawName);
   const contact = escapeHtml(rawContact);
   const email = escapeHtml(buyerEmail.value.trim());
@@ -1196,7 +1428,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     return;
   }
 
-  // Verificación de Seguridad Anti-Reserva-Doble en Vivo con Supabase
+  // Verificación Anti-Reserva-Doble
   if(supabaseClient && !editingNumber){
     try{
       const { data: conflicts } = await supabaseClient.from('boletas').select('numero').in('numero', targetNumbers);
@@ -1223,7 +1455,6 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     paid: isAdminMode ? buyerPaid.checked : false
   };
 
-  // Guardar todas las boletas seleccionadas
   targetNumbers.forEach(num => {
     tickets[num] = { ...data };
   });
@@ -1235,7 +1466,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
 
   const reservedList = targetNumbers.map(n => '#' + n).join(', ');
   selectedNumbers.clear();
-  renderGrid(searchBox.value);
+  renderGrid();
   renderStats();
   closeModal();
 
@@ -1256,12 +1487,77 @@ document.getElementById('releaseBtn').addEventListener('click', async () => {
     await deleteTicketFromSupabase(editingNumber);
   }
 
-  renderGrid(searchBox.value);
+  renderGrid();
   renderStats();
   closeModal();
 });
 
-searchBox.addEventListener('input', () => renderGrid(searchBox.value));
+searchBox.addEventListener('input', () => renderGrid());
+
+const filterModeSelect = document.getElementById('filterMode');
+if(filterModeSelect){
+  filterModeSelect.addEventListener('change', (e) => {
+    currentFilterMode = e.target.value;
+    renderGrid();
+  });
+}
+
+// Grid Filter Pills Click Event
+document.querySelectorAll('#filterPills .pill-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    document.querySelectorAll('#filterPills .pill-btn').forEach(p => p.classList.remove('active'));
+    e.currentTarget.classList.add('active');
+    currentStatusFilter = e.currentTarget.getAttribute('data-filter');
+    renderGrid();
+  });
+});
+
+// Modal Buyers List Listeners
+const buyersModalOverlay = document.getElementById('buyersModalOverlay');
+const openBuyersModalBtn = document.getElementById('openBuyersModalBtn');
+const adminBuyersBtn = document.getElementById('adminBuyersBtn');
+const closeBuyersModalBtn = document.getElementById('closeBuyersModalBtn');
+const closeBuyersModalX = document.getElementById('closeBuyersModalX');
+const modalSearchBox = document.getElementById('modalSearchBox');
+const modalCopyListBtn = document.getElementById('modalCopyListBtn');
+
+function openBuyersModal(){
+  renderBuyersList();
+  buyersModalOverlay.classList.add('open');
+  if(modalSearchBox) modalSearchBox.focus();
+}
+
+function closeBuyersModal(){
+  buyersModalOverlay.classList.remove('open');
+}
+
+if(openBuyersModalBtn) openBuyersModalBtn.addEventListener('click', openBuyersModal);
+if(adminBuyersBtn) adminBuyersBtn.addEventListener('click', openBuyersModal);
+if(closeBuyersModalBtn) closeBuyersModalBtn.addEventListener('click', closeBuyersModal);
+if(closeBuyersModalX) closeBuyersModalX.addEventListener('click', closeBuyersModal);
+
+buyersModalOverlay.addEventListener('click', (e) => {
+  if(e.target === buyersModalOverlay) closeBuyersModal();
+});
+
+if(modalSearchBox){
+  modalSearchBox.addEventListener('input', () => renderBuyersList());
+}
+
+document.querySelectorAll('.modal-filter-pill').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    document.querySelectorAll('.modal-filter-pill').forEach(p => p.classList.remove('active'));
+    e.currentTarget.classList.add('active');
+    currentModalFilter = e.currentTarget.getAttribute('data-mfilter');
+    renderBuyersList();
+  });
+});
+
+if(modalCopyListBtn){
+  modalCopyListBtn.addEventListener('click', () => {
+    document.getElementById('exportBtn').click();
+  });
+}
 
 // Export List
 document.getElementById('exportBtn').addEventListener('click', async () => {
@@ -1284,15 +1580,13 @@ document.getElementById('exportBtn').addEventListener('click', async () => {
 const toggleAdminBtn = document.getElementById('toggleAdminBtn');
 toggleAdminBtn.addEventListener('click', () => {
   if(isAdminMode){
-    // Logout
     isAdminMode = false;
     toggleAdminBtn.textContent = '🔓 Modo Admin';
     toggleAdminBtn.style.background = 'var(--deep)';
     adminBox.classList.remove('active');
     selectedNumbers.clear();
-    renderGrid(searchBox.value);
+    renderGrid();
   } else {
-    // Request password
     adminPassInput.value = '';
     adminAuthError.style.display = 'none';
     adminAuthOverlay.classList.add('open');
@@ -1315,7 +1609,7 @@ document.getElementById('submitAuthBtn').addEventListener('click', () => {
     adminBox.classList.add('active');
     adminAuthOverlay.classList.remove('open');
     selectedNumbers.clear();
-    renderGrid(searchBox.value);
+    renderGrid();
   } else {
     adminAuthError.style.display = 'block';
     adminPassInput.focus();
